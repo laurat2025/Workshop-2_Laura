@@ -1,25 +1,16 @@
-import sqlite3
 import pandas as pd
 from sqlalchemy import create_engine
 
-DB_PATH = 'data/etl_workshop.db'
+from src import config as cfg
+
 
 def get_engine():
-    return create_engine(f'sqlite:///{DB_PATH}')
+    return create_engine(cfg.DB_URL)
 
-def init_db_grammys():
-    """Carga inicial del CSV de Grammys a la BD SQLite para simular la fuente SQL"""
-    conn = sqlite3.connect(DB_PATH)
-    try:
-        df_grammys = pd.read_csv('data/grammys_raw.csv')
-        df_grammys.to_sql('grammys_raw', conn, if_exists='replace', index=False)
-    except Exception as e:
-        print(f"Error inicializando BD de Grammys: {e}")
-    finally:
-        conn.close()
 
-def read_grammys_from_db():
-    conn = sqlite3.connect(DB_PATH)
-    df = pd.read_sql_query("SELECT * FROM grammys_raw", conn)
-    conn.close()
-    return df
+def init_db_grammys(csv_path=None):
+    """Carga inicial del CSV de Grammys a la BD SQL (esta será la 'base de datos fuente')."""
+    cfg.ensure_dirs()
+    df = pd.read_csv(csv_path or cfg.GRAMMYS_RAW)
+    df.to_sql(cfg.GRAMMYS_TABLE, con=get_engine(), if_exists="replace", index=False)
+    print(f"Tabla '{cfg.GRAMMYS_TABLE}' cargada en la BD SQL: {df.shape[0]} filas, {df.shape[1]} columnas.")

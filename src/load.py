@@ -1,16 +1,14 @@
-import pandas as pd
-import sqlite3
+from src import config as cfg
+from src.database import get_engine
 
-DB_PATH = 'data/etl_workshop.db'
 
-def load_merged_data_to_db():
-    df = pd.read_csv('data/tmp_merged.csv')
-    conn = sqlite3.connect(DB_PATH)
-    df.to_sql('spotify_grammys_merged', conn, if_exists='replace', index=False)
-    conn.close()
-    print("Datos cargados exitosamente en la BD (tabla: spotify_grammys_merged).")
+def save_to_db(df, table_name=None):
+    table_name = table_name or cfg.FINAL_TABLE
+    df.to_sql(table_name, con=get_engine(), if_exists="replace", index=False, chunksize=5000)
+    print(f"{len(df)} filas cargadas en la BD (tabla: {table_name}).")
 
-def store_merged_data_to_csv():
-    df = pd.read_csv('data/tmp_merged.csv')
-    df.to_csv('data/transformed_dataset.csv', index=False)
-    print("Archivo CSV exportado correctamente en: data/transformed_dataset.csv")
+
+def export_to_csv(df, output_path=None):
+    output_path = output_path or cfg.FINAL_CSV
+    df.to_csv(output_path, index=False)
+    print(f"CSV exportado en: {output_path}")
