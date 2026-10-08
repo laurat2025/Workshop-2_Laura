@@ -28,28 +28,43 @@ El flujo procesa ambos conjuntos, valida la calidad de los datos de Spotify con 
 
 ## 🔄 Flujo del Pipeline (DAG: `spotify_grammys_etl`)
 
-### Descripción de Tareas
-
 | Tarea | Descripción |
 |---|---|
 | `read_csv` | Lee el dataset de canciones de Spotify desde el archivo CSV raw y lo guarda en staging. |
-| `validate_csv` | Evalúa la calidad de datos con Pandera. Genera `validation_report.json` y separa filas inválidas en `rejected_rows.csv`. Si el porcentaje de error supera el 5%, el DAG se detiene (`FAILED`). |
+| `validate_csv` | Evalúa la calidad de datos con Pandera. Genera `validation_report.json` y separa filas inválidas. Si el porcentaje de error supera el 5%, el DAG se detiene (`FAILED`). |
 | `transform_csv` | Limpia índices sobrantes, elimina duplicados por `track_id`, calcula la duración en minutos (`duration_min`) y extrae el artista principal (`primary_artist`). |
 | `read_db` | Lee la tabla `grammys_raw` cargada en la base de datos SQL (SQLite). |
-| `transform_db` | Procesa y normaliza artistas de Grammys. Si la columna `artist` está vacía (~38% de los casos), extrae el artista desde el campo `workers`. Agrupa nominaciones y rango de años por artista. |
+| `transform_db` | Procesa y normaliza artistas de Grammys. Si la columna `artist` está vacía (~38% de los casos), extrae el artista desde el campo `workers`. |
 | `merge` | Realiza un `LEFT JOIN` conservando todas las canciones de Spotify. Asigna a cada canción la información del artista con mayor cantidad de nominaciones al Grammy. |
 | `load` | Guarda el dataset resultante consolidado en la tabla `spotify_grammys_merged` de la base de datos. |
 | `store` | Exporta la tabla final desde la base de datos al archivo `data/transformed_dataset.csv`. |
 
 ---
+---
 
 ## 📂 Estructura del Proyecto
-## 🚀 Requisitos e Instalación
 
-Para ejecutar este proyecto de forma local o en Google Colab, instala las dependencias necesarias:
-
-```bash
-pip install apache-airflow pandera sqlalchemy pandas matplotlib seaborn kagglehub
-
+```text
+.
+├── dags/
+│   └── spotify_grammys_dag.py           # Definición del DAG de Airflow
+├── data/
+│   ├── reports/
+│   │   ├── rejected_rows.csv            # Filas que no cumplieron las reglas de calidad
+│   │   └── validation_report.json       # Reporte detallado de validación (Pandera)
+│   ├── etl_workshop.db                  # Base de datos SQLite
+│   ├── grammys_raw.csv                  # Dataset raw de Grammys
+│   ├── spotify_tracks.csv               # Dataset raw de Spotify
+│   └── transformed_dataset.csv          # Entregable final exportado
+├── src/
+│   ├── __init__.py
+│   ├── config.py                        # Configuración de rutas y parámetros globales
+│   ├── database.py                      # Conexión a BD y carga inicial
+│   ├── load.py                          # Funciones de carga a BD y exportación a CSV
+│   ├── quality.py                       # Definición del schema y validación con Pandera
+│   ├── tasks.py                         # Funciones ejecutadas por cada tarea del DAG
+│   └── transform.py                     # Lógica de limpieza, normalización y merge
+├── README.md                            # Documentación del proyecto
+└── Workshop_2_Automatization_of_ETL_pipeline.ipynb  # Notebook principal de ejecución
 
 
